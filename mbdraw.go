@@ -192,7 +192,7 @@ func (f *Feature) append(
 
 	if len(f.geometry) > 0 {
 		var gpb []byte
-		var lastx, lasty float64
+		var lastx, lasty int64
 		var total int
 		if f.geometry[0].which != moveTo {
 			gpb = appendUvarint(gpb, uint64(commandInteger(moveTo, 1)))
@@ -216,12 +216,12 @@ func (f *Feature) append(
 				i++
 			case moveTo, lineTo:
 				for j := 0; j < count; j++ {
-					relx, rely := f.geometry[i+j].x-lastx, f.geometry[i+j].y-lasty
-					lastx, lasty = f.geometry[i+j].x, f.geometry[i+j].y
-					x := int64((relx / 256.0) * 4096.0)
-					y := int64((rely / 256.0) * 4096.0)
-					gpb = appendVarint(gpb, x)
-					gpb = appendVarint(gpb, y)
+					x := int64(f.geometry[i+j].x / 256.0 * 4096.0)
+					y := int64(f.geometry[i+j].y / 256.0 * 4096.0)
+					relx, rely := x-lastx, y-lasty
+					lastx, lasty = x, y
+					gpb = appendVarint(gpb, relx)
+					gpb = appendVarint(gpb, rely)
 					total += 2
 				}
 				i += count
