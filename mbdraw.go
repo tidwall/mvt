@@ -300,14 +300,14 @@ func appendString(pb []byte, s string) []byte {
 	return append(pb, s...)
 }
 func appendUvarint(pb []byte, n uint64) []byte {
-	var buf [32]byte
-	sz := binary.PutUvarint(buf[:], uint64(n))
-	return append(pb, buf[:sz]...)
+	vpb := append(pb, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+	sz := binary.PutUvarint(vpb[len(pb):], n)
+	return vpb[:len(pb)+sz]
 }
 func appendVarint(pb []byte, n int64) []byte {
-	var buf [32]byte
-	sz := binary.PutVarint(buf[:], int64(n))
-	return append(pb, buf[:sz]...)
+	vpb := append(pb, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+	sz := binary.PutVarint(vpb[len(pb):], n)
+	return vpb[:len(pb)+sz]
 }
 func quadratic(x0, y0, x1, y1, x2, y2, t float64) (x, y float64) {
 	u := 1 - t
