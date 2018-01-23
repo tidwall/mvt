@@ -10,6 +10,8 @@ import (
 	"math"
 )
 
+const extent = 4096
+
 // Tile represents a Mapbox Vector Tile
 type Tile struct {
 	layers []Layer
@@ -109,7 +111,6 @@ func (t *Tile) Render() []byte {
 }
 func (l *Layer) append(vpb []byte) []byte {
 	var pb []byte
-	pb = append(pb, 10)
 
 	// collect and encode tags
 	var ekeys []string
@@ -143,8 +144,11 @@ func (l *Layer) append(vpb []byte) []byte {
 		}
 	}
 
-	pb = appendUvarint(pb, uint64(len(l.name)))
-	pb = append(pb, l.name...)
+	if len(l.name) > 0 {
+		pb = append(pb, 10)
+		pb = appendUvarint(pb, uint64(len(l.name)))
+		pb = append(pb, l.name...)
+	}
 	for _, feature := range l.features {
 		pb = feature.append(pb, keysidxs, valsidxs)
 	}
@@ -154,8 +158,11 @@ func (l *Layer) append(vpb []byte) []byte {
 	for _, eval := range evals {
 		pb = append(pb, eval...)
 	}
-	pb = append(pb, 120)
-	pb = append(pb, 2)
+	if extent != 4096 {
+		pb = appendUvarint(pb, extent)
+	}
+	// add version
+	pb = append(pb, 120, 2)
 
 	// add the size to the beginning
 	vpb = append(vpb, 26)
@@ -216,8 +223,8 @@ func (f *Feature) append(
 				i++
 			case moveTo, lineTo:
 				for j := 0; j < count; j++ {
-					x := int64(f.geometry[i+j].x / 256.0 * 4096.0)
-					y := int64(f.geometry[i+j].y / 256.0 * 4096.0)
+					x := int64(f.geometry[i+j].x / 256.0 * extent)
+					y := int64(f.geometry[i+j].y / 256.0 * extent)
 					relx, rely := x-lastx, y-lasty
 					lastx, lasty = x, y
 					gpb = appendVarint(gpb, relx)

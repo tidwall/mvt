@@ -23,4 +23,23 @@ func TestDraw(t *testing.T) {
 	if fmt.Sprintf("%v", pb) != "[26 94 10 28 109 97 107 101 32 108 111 118 101 32 116 111 32 109 97 103 105 99 97 108 32 110 117 109 98 101 114 115 18 20 8 100 18 4 0 0 1 1 24 2 34 8 9 0 0 10 128 64 128 64 26 4 97 110 116 105 26 18 115 104 111 117 108 100 32 98 101 32 99 111 110 115 117 109 101 100 34 8 10 6 102 114 101 101 122 101 34 2 56 0 120 2]" {
 		t.Fatal("fatal bad no no")
 	}
+
+	// var t1 Tile
+	// t1.AddLayer("")
+
+	// fmt.Printf("%v\n", t1.Render())
+
+	// var tt vector_tile.Tile
+
+	// var extent uint32 = 4095
+	// var version uint32 = 2
+	// var tlayer = &vector_tile.Tile_Layer{Extent: &extent}
+	// tlayer.Version = &version
+	// //var name = ""
+	// //tlayer.Name = &name
+	// tlayer.Extent = nil
+	// tt.Layers = append(tt.Layers, tlayer)
+	// data, _ := proto.Marshal(&tt)
+	// fmt.Printf("%v\n", data)
+
 }
