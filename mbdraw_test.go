@@ -31,13 +31,13 @@ func TestDraw(t *testing.T) {
 
 	// var tt vector_tile.Tile
 
-	// var extent uint32 = 4095
+	// var extent uint32 = 4096
 	// var version uint32 = 2
 	// var tlayer = &vector_tile.Tile_Layer{Extent: &extent}
 	// tlayer.Version = &version
 	// //var name = ""
 	// //tlayer.Name = &name
-	// tlayer.Extent = nil
+	// //tlayer.Extent = nil
 	// tt.Layers = append(tt.Layers, tlayer)
 	// data, _ := proto.Marshal(&tt)
 	// fmt.Printf("%v\n", data)

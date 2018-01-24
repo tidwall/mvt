@@ -10,8 +10,6 @@ import (
 	"math"
 )
 
-const extent = 4096
-
 // Tile represents a Mapbox Vector Tile
 type Tile struct {
 	layers []Layer
@@ -19,8 +17,16 @@ type Tile struct {
 
 // Layer represents a layer
 type Layer struct {
-	name     string
-	features []Feature
+	name      string
+	features  []Feature
+	extent    uint32
+	hasExtent bool
+}
+
+// SetExtent sets the layers extent. Default is 4096.
+func (l *Layer) SetExtent(extent uint32) {
+	l.extent = extent
+	l.hasExtent = true
 }
 
 // AddLayer adds a layer
@@ -149,8 +155,12 @@ func (l *Layer) append(vpb []byte) []byte {
 		pb = appendUvarint(pb, uint64(len(l.name)))
 		pb = append(pb, l.name...)
 	}
+	var extent float64 = 4096
+	if l.hasExtent {
+		extent = float64(l.extent)
+	}
 	for _, feature := range l.features {
-		pb = feature.append(pb, keysidxs, valsidxs)
+		pb = feature.append(pb, keysidxs, valsidxs, extent)
 	}
 	for _, ekey := range ekeys {
 		pb = append(pb, ekey...)
@@ -158,8 +168,9 @@ func (l *Layer) append(vpb []byte) []byte {
 	for _, eval := range evals {
 		pb = append(pb, eval...)
 	}
-	if extent != 4096 {
-		pb = appendUvarint(pb, extent)
+	if l.hasExtent && l.extent != 4096 {
+		pb = append(pb, 40)
+		pb = appendUvarint(pb, uint64(l.extent))
 	}
 	// add version
 	pb = append(pb, 120, 2)
@@ -172,7 +183,7 @@ func (l *Layer) append(vpb []byte) []byte {
 }
 
 func (f *Feature) append(
-	vpb []byte, keysidxs, valsidxs []int,
+	vpb []byte, keysidxs, valsidxs []int, extent float64,
 ) []byte {
 	var pb []byte
 	if f.hasID {
