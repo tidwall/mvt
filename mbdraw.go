@@ -50,8 +50,8 @@ const (
 )
 
 type tag struct {
-	key   string
-	value interface{}
+	key string
+	val interface{}
 }
 
 const (
@@ -113,42 +113,43 @@ func (t *Tile) Render() []byte {
 		pb = layer.append(pb)
 	}
 	return pb
-
 }
-func (l *Layer) append(vpb []byte) []byte {
-	var pb []byte
 
-	// collect and encode tags
-	var ekeys []string
-	var evals []string
-	var keysidxs []int
-	var valsidxs []int
-	keym := make(map[string]int)
-	valm := make(map[string]int)
-	var keyidx int
-	var validx int
+func (l *Layer) collectTags() (
+	keysa, valsa []string,
+	tagidxs []int,
+) {
+	var keyidx, validx int
+	keys := make(map[string]int)
+	vals := make(map[string]int)
 	for _, feature := range l.features {
 		for _, tag := range feature.tags {
-			ekey := encodeKey(tag.key)
-			eval := encodeValue(tag.value)
-			idx, ok := keym[ekey]
-			if !ok {
-				ekeys = append(ekeys, ekey)
-				idx = keyidx
+			key := encodeKey(tag.key)
+			if idx, ok := keys[key]; !ok {
+				tagidxs = append(tagidxs, keyidx)
+				keys[key] = keyidx
 				keyidx++
-				keym[ekey] = idx
+				keysa = append(keysa, key)
+			} else {
+				tagidxs = append(tagidxs, idx)
 			}
-			keysidxs = append(keysidxs, idx)
-			idx, ok = valm[eval]
-			if !ok {
-				evals = append(evals, eval)
-				idx = validx
+			val := encodeValue(tag.val)
+			if idx, ok := vals[val]; !ok {
+				tagidxs = append(tagidxs, validx)
+				vals[val] = validx
 				validx++
-				valm[eval] = idx
+				valsa = append(valsa, val)
+			} else {
+				tagidxs = append(tagidxs, idx)
 			}
-			valsidxs = append(valsidxs, idx)
 		}
 	}
+	return
+}
+
+func (l *Layer) append(vpb []byte) []byte {
+	var pb []byte
+	keysa, valsa, tagidxs := l.collectTags()
 
 	if len(l.name) > 0 {
 		pb = append(pb, 10)
@@ -160,13 +161,13 @@ func (l *Layer) append(vpb []byte) []byte {
 		extent = float64(l.extent)
 	}
 	for _, feature := range l.features {
-		pb = feature.append(pb, keysidxs, valsidxs, extent)
+		pb, tagidxs = feature.append(pb, tagidxs, extent)
 	}
-	for _, ekey := range ekeys {
-		pb = append(pb, ekey...)
+	for _, v := range keysa {
+		pb = append(pb, v...)
 	}
-	for _, eval := range evals {
-		pb = append(pb, eval...)
+	for _, v := range valsa {
+		pb = append(pb, v...)
 	}
 	if l.hasExtent && l.extent != 4096 {
 		pb = append(pb, 40)
@@ -183,8 +184,8 @@ func (l *Layer) append(vpb []byte) []byte {
 }
 
 func (f *Feature) append(
-	vpb []byte, keysidxs, valsidxs []int, extent float64,
-) []byte {
+	vpb []byte, tagidxs []int, extent float64,
+) ([]byte, []int) {
 	var pb []byte
 	if f.hasID {
 		pb = append(pb, 8)
@@ -194,9 +195,10 @@ func (f *Feature) append(
 	if len(f.tags) > 0 {
 		pb = append(pb, 18)
 		pb = appendUvarint(pb, uint64(len(f.tags)*2))
-		for i := range f.tags {
-			pb = appendUvarint(pb, uint64(keysidxs[i]))
-			pb = appendUvarint(pb, uint64(valsidxs[i]))
+		for range f.tags {
+			pb = appendUvarint(pb, uint64(tagidxs[0]))
+			pb = appendUvarint(pb, uint64(tagidxs[1]))
+			tagidxs = tagidxs[2:]
 		}
 	}
 
@@ -255,7 +257,7 @@ func (f *Feature) append(
 	vpb = append(vpb, 18)
 	vpb = appendUvarint(vpb, uint64(len(pb)))
 	vpb = append(vpb, pb...)
-	return vpb
+	return vpb, tagidxs
 }
 
 func commandInteger(id, count int) uint32 {
