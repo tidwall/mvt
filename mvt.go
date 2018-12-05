@@ -2,7 +2,7 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
-package mbdraw
+package mvt
 
 import (
 	"encoding/binary"
@@ -389,4 +389,28 @@ func (f *Feature) CubicTo(x1, y1, x2, y2, x3, y3 float64) {
 		t := float64(i) / d
 		f.LineTo(cubic(x0, y0, x1, y1, x2, y2, x3, y3, t))
 	}
+}
+
+const (
+	minLat = -85.05112878
+	maxLat = 85.05112878
+	minLon = -180
+	maxLon = 180
+)
+
+// LatLonXY converts a lat/lon to an point x/y for the specified map tile.
+func LatLonXY(lat, lon float64, tileX, tileY, tileZ int) (x, y float64) {
+	lat = clamp(lat, minLat, maxLat)
+	lon = clamp(lon, minLon, maxLon)
+	lx := (lon + 180) / 360
+	sinLat := math.Sin(lat * math.Pi / 180)
+	ly := 0.5 - math.Log((1+sinLat)/(1-sinLat))/(4*math.Pi)
+	mapSize := float64(uint64(256) << uint(tileZ))
+	pixelX := clamp(lx*mapSize+0.5, 0, mapSize-1)
+	pixelY := clamp(ly*mapSize+0.5, 0, mapSize-1)
+	return pixelX - float64(tileX<<8), pixelY - float64(tileY<<8)
+}
+
+func clamp(v, lo, hi float64) float64 {
+	return math.Min(math.Max(v, lo), hi)
 }
