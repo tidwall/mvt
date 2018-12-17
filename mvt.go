@@ -406,8 +406,8 @@ func LatLonXY(lat, lon float64, tileX, tileY, tileZ int) (x, y float64) {
 	sinLat := math.Sin(lat * math.Pi / 180)
 	ly := 0.5 - math.Log((1+sinLat)/(1-sinLat))/(4*math.Pi)
 	mapSize := float64(uint64(256) << uint(tileZ))
-	pixelX := clamp(lx*mapSize+0.5, 0, mapSize-1)
-	pixelY := clamp(ly*mapSize+0.5, 0, mapSize-1)
+	pixelX := clamp(lx*mapSize+0, 0, mapSize-1)
+	pixelY := clamp(ly*mapSize+0, 0, mapSize-1)
 	return pixelX - float64(tileX<<8), pixelY - float64(tileY<<8)
 }
 
