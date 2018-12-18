@@ -31,3 +31,24 @@ func TestLatLonXY(t *testing.T) {
 		t.Fatal("baddness. ah so sad")
 	}
 }
+
+func TestParallelLayerPop(t *testing.T) {
+	var tile Tile
+	points := tile.AddLayer("layer-points")
+	polygons := tile.AddLayer("layer-polygons")
+
+	f1 := points.AddFeature(Point)
+	f1.MoveTo(100, 100)
+	f1.ClosePath()
+
+	f2 := polygons.AddFeature(Polygon)
+	f2.MoveTo(100, 100)
+	f2.MoveTo(50, 100)
+	f2.MoveTo(0, 0)
+	f2.ClosePath()
+
+	if len(tile.layers) != 2 || len(tile.layers[0].features) != 1 ||
+		len(tile.layers[1].features) != 1 {
+		t.Fatal("Failed to populate tile layers in parallel")
+	}
+}

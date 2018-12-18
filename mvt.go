@@ -12,13 +12,13 @@ import (
 
 // Tile represents a Mapbox Vector Tile
 type Tile struct {
-	layers []Layer
+	layers []*Layer
 }
 
 // Layer represents a layer
 type Layer struct {
 	name      string
-	features  []Feature
+	features  []*Feature
 	extent    uint32
 	hasExtent bool
 }
@@ -31,8 +31,8 @@ func (l *Layer) SetExtent(extent uint32) {
 
 // AddLayer adds a layer
 func (t *Tile) AddLayer(name string) *Layer {
-	t.layers = append(t.layers, Layer{name: name})
-	return &t.layers[len(t.layers)-1]
+	t.layers = append(t.layers, &Layer{name: name})
+	return t.layers[len(t.layers)-1]
 }
 
 // GeometryType represents geometry type
@@ -76,8 +76,8 @@ type Feature struct {
 
 // AddFeature add a geometry feature
 func (l *Layer) AddFeature(geomType GeometryType) *Feature {
-	l.features = append(l.features, Feature{geomType: geomType})
-	return &l.features[len(l.features)-1]
+	l.features = append(l.features, &Feature{geomType: geomType})
+	return l.features[len(l.features)-1]
 }
 
 // SetID set the id
@@ -406,8 +406,8 @@ func LatLonXY(lat, lon float64, tileX, tileY, tileZ int) (x, y float64) {
 	sinLat := math.Sin(lat * math.Pi / 180)
 	ly := 0.5 - math.Log((1+sinLat)/(1-sinLat))/(4*math.Pi)
 	mapSize := float64(uint64(256) << uint(tileZ))
-	pixelX := clamp(lx*mapSize+0.5, 0, mapSize-1)
-	pixelY := clamp(ly*mapSize+0.5, 0, mapSize-1)
+	pixelX := clamp(lx*mapSize+0, 0, mapSize-1)
+	pixelY := clamp(ly*mapSize+0, 0, mapSize-1)
 	return pixelX - float64(tileX<<8), pixelY - float64(tileY<<8)
 }
 
