@@ -1,6 +1,6 @@
-# mbdraw
+# mvt
 
-[![GoDoc](https://img.shields.io/badge/api-reference-blue.svg?style=flat-square)](https://godoc.org/github.com/tidwall/mbdraw)
+[![GoDoc](https://img.shields.io/badge/api-reference-blue.svg?style=flat-square)](https://godoc.org/github.com/tidwall/mvt)
 
 Draw [Mapbox Vector Tiles](https://www.mapbox.com/vector-tiles/) with ease.
 
@@ -17,15 +17,15 @@ Draw [Mapbox Vector Tiles](https://www.mapbox.com/vector-tiles/) with ease.
 ## Install
 
 ```
-go get -u github.com/tidwall/mbdraw
+go get -u github.com/tidwall/mvt
 ```
 
 ## Example
 
 ```go
-var tile mbdraw.Tile
+var tile mvt.Tile
 l := tile.AddLayer("triforce")
-f := l.AddFeature(mbdraw.Polygon)
+f := l.AddFeature(mvt.Polygon)
 
 f.MoveTo(128, 96)
 f.LineTo(148, 128)
@@ -69,4 +69,4 @@ This will move to `[2.76645 0.56180]`.
 Josh Baker [@tidwall](http://twitter.com/tidwall)
 
 ## License
-mbdraw source code is available under the MIT [License](/LICENSE).
+mvt source code is available under the MIT [License](/LICENSE).
