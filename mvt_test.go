@@ -27,7 +27,7 @@ func TestDraw(t *testing.T) {
 
 func TestLatLonXY(t *testing.T) {
 	x, y := LatLonXY(33.4131, -111.9396, 6195, 13154, 15)
-	if fmt.Sprintf("%0.5f %0.5f", x, y) != "2.76645 0.56180" {
+	if fmt.Sprintf("%0.5f %0.5f", x, y) != "2.26645 0.06180" {
 		t.Fatal("baddness. ah so sad")
 	}
 }
