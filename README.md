@@ -54,16 +54,10 @@ data := tile.Render()
 
 <img src="https://i.imgur.com/ynIx6nt.png" width="300" height="300">
 
+## Helper functions
 
-There's also the helper function `mvt.LatLonXY` for converting a lat/lon for 
-a specific tile to the appropriate x/y position for drawing in that tile.
-For example:
-
-```go
-f.MoveTo(mvt.LatLonXY(33.4131, -111.9396, 6195, 13154, 15))
-```
-
-This will move to `[2.76645 0.56180]`.
+- `mvt.LatLonXY`: Converts a lat/lon to the pixel offset for a specific tile.
+- `mvt.TileBounds`: Returns the lat/lon boundary for a tile.
 
 ## Contact
 Josh Baker [@tidwall](http://twitter.com/tidwall)

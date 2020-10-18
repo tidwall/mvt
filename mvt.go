@@ -392,16 +392,17 @@ func (f *Feature) CubicTo(x1, y1, x2, y2, x3, y3 float64) {
 }
 
 const (
-	minLat = -85.05112878
-	maxLat = 85.05112878
-	minLon = -180
-	maxLon = 180
+	gMinLat   = -85.05112878
+	gMaxLat   = 85.05112878
+	gMinLon   = -180.0
+	gMaxLon   = 180.0
+	gTileSize = 256
 )
 
 // LatLonXY converts a lat/lon to an point x/y for the specified map tile.
 func LatLonXY(lat, lon float64, tileX, tileY, tileZ int) (x, y float64) {
-	lat = clamp(lat, minLat, maxLat)
-	lon = clamp(lon, minLon, maxLon)
+	lat = clamp(lat, gMinLat, gMaxLat)
+	lon = clamp(lon, gMinLon, gMaxLon)
 	lx := (lon + 180) / 360
 	sinLat := math.Sin(lat * math.Pi / 180)
 	ly := 0.5 - math.Log((1+sinLat)/(1-sinLat))/(4*math.Pi)
@@ -413,4 +414,45 @@ func LatLonXY(lat, lon float64, tileX, tileY, tileZ int) (x, y float64) {
 
 func clamp(v, lo, hi float64) float64 {
 	return math.Min(math.Max(v, lo), hi)
+}
+
+func tileXYToPixelXY(tileX, tileY int) (pixelX, pixelY int) {
+	return tileX << 8, tileY << 8
+}
+
+func gMapSize(levelOfDetail int) uint64 {
+	return gTileSize << levelOfDetail
+}
+
+func pixelXYToLatLon(pixelX, pixelY, levelOfDetail int) (lat, lon float64) {
+	mapSize := float64(gMapSize(levelOfDetail))
+	x := (clamp(float64(pixelX), 0, mapSize-1) / mapSize) - 0.5
+	y := 0.5 - (clamp(float64(pixelY), 0, mapSize-1) / mapSize)
+	lat = 90 - 360*math.Atan(math.Exp(-y*2*math.Pi))/math.Pi
+	lon = 360 * x
+	return
+}
+
+// TileBounds returns the lat/lon bounds around a tile.
+func TileBounds(tileX, tileY, tileZ int,
+) (minLat, minLon, maxLat, maxLon float64) {
+	levelOfDetail := tileZ
+	size := int(1 << levelOfDetail)
+	pixelX, pixelY := tileXYToPixelXY(tileX, tileY)
+	maxLat, minLon = pixelXYToLatLon(pixelX, pixelY, levelOfDetail)
+	pixelX, pixelY = tileXYToPixelXY(tileX+1, tileY+1)
+	minLat, maxLon = pixelXYToLatLon(pixelX, pixelY, levelOfDetail)
+	if size == 0 || tileX%size == 0 {
+		minLon = gMinLon
+	}
+	if size == 0 || tileX%size == size-1 {
+		maxLon = gMaxLon
+	}
+	if tileY <= 0 {
+		maxLat = gMaxLat
+	}
+	if tileY >= size-1 {
+		minLat = gMinLat
+	}
+	return
 }

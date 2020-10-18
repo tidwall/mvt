@@ -32,6 +32,19 @@ func TestLatLonXY(t *testing.T) {
 	}
 }
 
+func TestTileBounds(t *testing.T) {
+	minLat, minLon, maxLat, maxLon := TileBounds(6195, 13154, 15)
+	r := fmt.Sprintf("%0.5f %0.5f %0.5f %0.5f", minLat, minLon, maxLat, maxLon)
+	if r != "33.40393 -111.93970 33.41310 -111.92871" {
+		t.Fatal("oh no this aint ok")
+	}
+	minLat, minLon, maxLat, maxLon = TileBounds(0, 0, 1)
+	r = fmt.Sprintf("%0.5f %0.5f %0.5f %0.5f", minLat, minLon, maxLat, maxLon)
+	if r != "0.00000 -180.00000 85.05113 0.00000" {
+		t.Fatal("whoops we did a bummer")
+	}
+}
+
 func TestParallelLayerPop(t *testing.T) {
 	var tile Tile
 	points := tile.AddLayer("layer-points")
