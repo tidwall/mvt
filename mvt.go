@@ -413,7 +413,13 @@ func LatLonXY(lat, lon float64, tileX, tileY, tileZ int) (x, y float64) {
 }
 
 func clamp(v, lo, hi float64) float64 {
-	return math.Min(math.Max(v, lo), hi)
+	if v < lo {
+		return lo
+	}
+	if v > hi {
+		return hi
+	}
+	return v
 }
 
 func tileXYToPixelXY(tileX, tileY int) (pixelX, pixelY int) {
