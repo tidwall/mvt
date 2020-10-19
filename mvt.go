@@ -8,11 +8,16 @@ import (
 	"encoding/binary"
 	"fmt"
 	"math"
+
+	"github.com/tidwall/geojson"
+	"github.com/tidwall/geojson/geometry"
 )
 
 // Tile represents a Mapbox Vector Tile
 type Tile struct {
-	layers []*Layer
+	layers  []*Layer
+	z, x, y int
+	rect    *geojson.Rect
 }
 
 // Layer represents a layer
@@ -21,6 +26,8 @@ type Layer struct {
 	features  []*Feature
 	extent    uint32
 	hasExtent bool
+	z, x, y   int
+	rect      *geojson.Rect
 }
 
 // SetExtent sets the layers extent. Default is 4096.
@@ -31,7 +38,9 @@ func (l *Layer) SetExtent(extent uint32) {
 
 // AddLayer adds a layer
 func (t *Tile) AddLayer(name string) *Layer {
-	t.layers = append(t.layers, &Layer{name: name})
+	t.layers = append(t.layers, &Layer{
+		name: name, z: t.z, x: t.x, y: t.y, rect: t.rect,
+	})
 	return t.layers[len(t.layers)-1]
 }
 
@@ -456,3 +465,164 @@ func TileBounds(tileX, tileY, tileZ int,
 	}
 	return
 }
+
+// NewTile ...
+func NewTile(tileX, tileY, tileZ int) *Tile {
+	tile := &Tile{
+		z: tileZ, x: tileX, y: tileY,
+	}
+	minLat, minLon, maxLat, maxLon := TileBounds(tileX, tileY, tileZ)
+	tile.rect = geojson.NewRect(geometry.Rect{
+		Min: geometry.Point{X: minLon, Y: minLat},
+		Max: geometry.Point{X: maxLon, Y: maxLat},
+	})
+	return tile
+}
+
+// Rect ...
+func (t *Tile) Rect() geometry.Rect {
+	return t.rect.Base()
+}
+
+// AddGeoJSON ...
+func (l *Layer) AddGeoJSON(id uint64, obj geojson.Object) {
+	switch obj := obj.(type) {
+	case *geojson.Point:
+		l.addGeoJSONPoint(id, obj)
+	case *geojson.MultiPoint:
+		l.addGeoJSONMultiPoint(id, obj)
+	// case *geojson.LineString:
+	// 	l.addGeoJSONLineString(id, obj)
+	default:
+
+	}
+}
+
+// AddPoint ...
+func (l *Layer) addGeoJSONPoint(id uint64, point *geojson.Point) {
+	if !l.rect.Contains(point) {
+		return
+	}
+	f := l.AddFeature(Point)
+	if id != 0 {
+		f.SetID(id)
+	}
+	pt := point.Base()
+	f.MoveTo(LatLonXY(pt.Y, pt.X, l.x, l.y, l.z))
+}
+
+func (l *Layer) addGeoJSONMultiPoint(id uint64, points *geojson.MultiPoint) {
+	if !l.rect.Contains(points) {
+		return
+	}
+	f := l.AddFeature(Point)
+	if id != 0 {
+		f.SetID(id)
+	}
+	for _, obj := range points.Base() {
+		if !l.rect.Contains(obj) {
+			return
+		}
+		pt := obj.Center()
+		f.MoveTo(LatLonXY(pt.Y, pt.X, l.x, l.y, l.z))
+	}
+}
+
+// func (l *Layer) addGeoJSONLineString(id uint64, line *geojson.LineString) {
+// 	if !l.rect.Contains(line) {
+// 		return
+// 	}
+// 	f := l.AddFeature(LineString)
+// 	if id != 0 {
+// 		f.SetID(id)
+// 	}
+
+// 	// objs := point.Base()
+// 	// for _, obj := range objs {
+// 	// 	pt := obj.Center()
+// 	// 	f.MoveTo(LatLonXY(pt.Y, pt.X, l.x, l.y, l.z))
+// 	// }
+// }
+
+// // AddMultiPoint ...
+// func (l *Layer) AddMultiPoint(id uint64, points []geometry.Point) {
+// 	f := l.AddFeature(Point)
+// 	if id != 0 {
+// 		f.SetID(id)
+// 	}
+// 	for _, pt := range points {
+// 		f.MoveTo(LatLonXY(pt.Y, pt.X, l.x, l.y, l.z))
+// 	}
+// }
+
+// func (l *Layer) addSeries(f *Feature, series geometry.Series,
+// 	poly, exterior bool,
+// ) {
+// 	npoints := series.NumPoints()
+// 	if npoints == 0 {
+// 		return
+// 	}
+// 	var reverse bool
+// 	if poly {
+// 		if series.Clockwise() {
+// 			if exterior {
+// 				reverse = true
+// 			}
+// 		} else {
+// 			if !exterior {
+// 				reverse = false
+// 			}
+// 		}
+// 	}
+// 	for i := 0; i < npoints; i++ {
+// 		var pt geometry.Point
+// 		if reverse {
+// 			pt = series.PointAt(npoints - 1 - i)
+// 		} else {
+// 			pt = series.PointAt(i)
+// 		}
+// 		if i == 0 {
+// 			f.MoveTo(LatLonXY(pt.Y, pt.X, l.x, l.y, l.z))
+// 		} else {
+// 			f.LineTo(LatLonXY(pt.Y, pt.X, l.x, l.y, l.z))
+// 		}
+// 	}
+// 	if poly {
+// 		f.ClosePath()
+// 	}
+// }
+
+// // AddLineString ...
+// func (l *Layer) AddLineString(id uint64, line *geometry.Line) {
+// 	l.AddMultiLineString(id, []*geometry.Line{line})
+// }
+
+// // AddMultiLineString ...
+// func (l *Layer) AddMultiLineString(id uint64, lines []*geometry.Line) {
+// 	f := l.AddFeature(LineString)
+// 	if id != 0 {
+// 		f.SetID(id)
+// 	}
+// 	for _, line := range lines {
+// 		l.addSeries(f, line, false, false)
+// 	}
+// }
+
+// // AddPolygon ...
+// func (l *Layer) AddPolygon(id uint64, poly *geometry.Poly) {
+// 	l.AddMultiPolygon(id, []*geometry.Poly{poly})
+// }
+
+// // AddMultiPolygon ...
+// func (l *Layer) AddMultiPolygon(id uint64, polys []*geometry.Poly) {
+// 	f := l.AddFeature(Polygon)
+// 	if id != 0 {
+// 		f.SetID(id)
+// 	}
+// 	for _, poly := range polys {
+// 		l.addSeries(f, poly.Exterior, true, true)
+// 		for _, hole := range poly.Holes {
+// 			l.addSeries(f, hole, true, true)
+// 		}
+// 	}
+// }
