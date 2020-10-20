@@ -43,6 +43,30 @@ func TestTileBounds(t *testing.T) {
 	if r != "0.00000 -180.00000 85.05113 0.00000" {
 		t.Fatal("whoops we did a bummer")
 	}
+
+	minLat, minLon, maxLat, maxLon = TileBounds(3, 2, 2) // Google ZXY 232
+	r = fmt.Sprintf("%0.5f %0.5f %0.5f %0.5f", minLat, minLon, maxLat, maxLon)
+	if r != "-66.51326 90.00000 0.00000 180.00000" {
+		t.Fatal("whoops we did a bummer")
+	}
+	// rect := geometry.Rect{
+	// 	Min: geometry.Point{X: minLon, Y: minLat},
+	// 	Max: geometry.Point{X: maxLon, Y: maxLat},
+	// }
+
+	// pt := geometry.Point{X: -179.995241, Y: -20.841812}
+
+	// fmt.Printf("[\n  [%f,%f]\n  [%f,%f]\n]\n[%f,%f]\n",
+	// 	rect.Min.X, rect.Min.Y, rect.Max.X, rect.Max.Y, pt.X, pt.Y)
+
+	// x, y := LatLonXY(pt.Y, pt.X, 3, 2, 2)
+
+	// fmt.Printf("[%f,%f]\n", x, y)
+
+	// // exceeds lat: -20.841812, lon: -179.995241, px: -767.986462, py: 60.635757 (tile: x: 3, y: 2, z: 2)
+
+	// exceeds lat: -4.405991, lon: -179.976782, px: -767.933959, py: 12.544966 (tile: x: 3, y: 2, z: 2)
+	// exceeds lat: -56.082370, lon: -179.911005, px: -767.746858, py: 193.552675 (tile: x: 3, y: 2, z: 2)
 }
 
 func TestParallelLayerPop(t *testing.T) {
