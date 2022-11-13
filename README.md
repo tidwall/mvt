@@ -2,7 +2,7 @@
 
 [![GoDoc](https://img.shields.io/badge/api-reference-blue.svg?style=flat-square)](https://godoc.org/github.com/tidwall/mvt)
 
-Draw [Mapbox Vector Tiles](https://www.mapbox.com/vector-tiles/) with ease.
+Draw [Mapbox Vector Tiles](https://github.com/mapbox/vector-tile-spec) with ease.
 
 ## Features
 
