@@ -193,13 +193,15 @@ func (f *Feature) append(
 	}
 
 	if len(f.tags) > 0 {
-		pb = append(pb, 18)
-		pb = appendUvarint(pb, uint64(len(f.tags)*2))
+		var tpb = make([]byte, 0, len(f.tags)*2)
 		for range f.tags {
-			pb = appendUvarint(pb, uint64(tagidxs[0]))
-			pb = appendUvarint(pb, uint64(tagidxs[1]))
+			tpb = appendUvarint(tpb, uint64(tagidxs[0]))
+			tpb = appendUvarint(tpb, uint64(tagidxs[1]))
 			tagidxs = tagidxs[2:]
 		}
+		pb = append(pb, 18)
+		pb = appendUvarint(pb, uint64(len(tpb)))
+		pb = append(pb, tpb...)		
 	}
 
 	switch f.geomType {
