@@ -169,10 +169,11 @@ func (l *Layer) append(vpb []byte) []byte {
 	for _, v := range valsa {
 		pb = append(pb, v...)
 	}
-	if l.hasExtent && l.extent != 4096 {
-		pb = append(pb, 40)
-		pb = appendUvarint(pb, uint64(l.extent))
-	}
+
+	// add extent
+	pb = append(pb, 40)
+	pb = appendUvarint(pb, uint64(extent))
+
 	// add version
 	pb = append(pb, 120, 2)
 
