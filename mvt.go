@@ -91,7 +91,7 @@ func (f *Feature) AddTag(key string, value interface{}) {
 	f.tags = append(f.tags, tag{key, value})
 }
 
-// MoveTo move to a point. The tile is 256x256.
+// MoveTo moves to a point. The tile is 256x256.
 func (f *Feature) MoveTo(x, y float64) {
 	f.geometry = append(f.geometry, command{moveTo, x, y})
 }
@@ -145,6 +145,24 @@ func (l *Layer) collectTags() (
 		}
 	}
 	return
+}
+
+func commandXY(cmd *command, extent float64) (int64, int64) {
+	x := cmd.x / 256.0 * extent
+	y := cmd.y / 256.0 * extent
+	min := 0 - extent*0.10
+	max := extent + extent*0.10
+	if x < min {
+		x = min
+	} else if x > max {
+		x = max
+	}
+	if y < min {
+		y = min
+	} else if y > max {
+		y = max
+	}
+	return int64(x), int64(y)
 }
 
 func (l *Layer) append(vpb []byte) []byte {
@@ -202,7 +220,7 @@ func (f *Feature) append(
 		}
 		pb = append(pb, 18)
 		pb = appendUvarint(pb, uint64(len(tpb)))
-		pb = append(pb, tpb...)		
+		pb = append(pb, tpb...)
 	}
 
 	switch f.geomType {
@@ -215,47 +233,55 @@ func (f *Feature) append(
 
 	if len(f.geometry) > 0 {
 		var gpb []byte
+		var hasMoveTo bool
 		var lastx, lasty int64
-		var total int
-		if f.geometry[0].which != moveTo {
-			gpb = appendUvarint(gpb, uint64(commandInteger(moveTo, 1)))
-			gpb = appendVarint(gpb, 0)
-			gpb = appendVarint(gpb, 0)
-			total += 3
-		}
-		for i := 0; i < len(f.geometry); {
-			count := 1
-			which := f.geometry[i].which
-			for j := i + 1; j < len(f.geometry); j++ {
-				if f.geometry[j].which != which {
-					break
+		for i := 0; i < len(f.geometry); i++ {
+			switch f.geometry[i].which {
+			case closePath:
+				gpb = appendUvarint(gpb, uint64(commandInteger(closePath, 1)))
+				hasMoveTo = false
+			case moveTo:
+				gpb = appendUvarint(gpb, uint64(commandInteger(moveTo, 1)))
+				x, y := commandXY(&f.geometry[i], extent)
+				gpb = appendVarint(gpb, x)
+				gpb = appendVarint(gpb, y)
+				lastx, lasty = x, y
+				hasMoveTo = true
+			case lineTo:
+				if !hasMoveTo {
+					// Move to 0x0 to make this geometry valid
+					gpb = appendUvarint(gpb, uint64(commandInteger(moveTo, 1)))
+					gpb = appendVarint(gpb, 0)
+					gpb = appendVarint(gpb, 0)
+					lastx, lasty = 0, 0
+					hasMoveTo = true
 				}
-				count++
-			}
-			gpb = appendUvarint(gpb, uint64(commandInteger(which, count)))
-			total++
-			switch which {
-			default:
-				i++
-			case moveTo, lineTo:
-				for j := 0; j < count; j++ {
-					x := int64(f.geometry[i+j].x / 256.0 * extent)
-					y := int64(f.geometry[i+j].y / 256.0 * extent)
+				var tbuf []byte
+				var count int
+				for ; i < len(f.geometry); i++ {
+					if f.geometry[i].which != lineTo {
+						break
+					}
+					x, y := commandXY(&f.geometry[i], extent)
 					relx, rely := x-lastx, y-lasty
+					if relx == 0 && rely == 0 {
+						continue
+					}
 					lastx, lasty = x, y
-					gpb = appendVarint(gpb, relx)
-					gpb = appendVarint(gpb, rely)
-					total += 2
+
+					tbuf = appendVarint(tbuf, relx)
+					tbuf = appendVarint(tbuf, rely)
+					count++
 				}
-				i += count
+				gpb = appendUvarint(gpb, uint64(commandInteger(lineTo, count)))
+				gpb = append(gpb, tbuf...)
+				i--
 			}
 		}
 		pb = append(pb, 34)
 		pb = appendUvarint(pb, uint64(len(gpb)))
 		pb = append(pb, gpb...)
-
 	}
-
 	// add the size to the beginning
 	vpb = append(vpb, 18)
 	vpb = appendUvarint(vpb, uint64(len(pb)))
