@@ -20,7 +20,13 @@ func TestDraw(t *testing.T) {
 
 	pb := tile.Render()
 
-	if fmt.Sprintf("%v", pb) != "[26 97 10 28 109 97 107 101 32 108 111 118 101 32 116 111 32 109 97 103 105 99 97 108 32 110 117 109 98 101 114 115 18 20 8 100 18 4 0 0 1 1 24 2 34 8 9 0 0 10 128 64 128 64 26 4 97 110 116 105 26 18 115 104 111 117 108 100 32 98 101 32 99 111 110 115 117 109 101 100 34 8 10 6 102 114 101 101 122 101 34 2 56 0 40 128 32 120 2]" {
+	if fmt.Sprintf("%v", pb) != "["+
+		"26 97 10 28 109 97 107 101 32 108 111 118 101 32 116 111 32 109 97 "+
+		"103 105 99 97 108 32 110 117 109 98 101 114 115 18 20 8 100 18 4 0 "+
+		"0 1 1 24 2 34 8 9 0 0 10 128 64 128 64 26 4 97 110 116 105 26 18 "+
+		"115 104 111 117 108 100 32 98 101 32 99 111 110 115 117 109 101 "+
+		"100 34 8 10 6 102 114 101 101 122 101 34 2 56 0 40 128 32 120 2"+
+		"]" {
 		t.Fatal("fatal bad no no")
 	}
 }
@@ -49,24 +55,6 @@ func TestTileBounds(t *testing.T) {
 	if r != "-66.51326 90.00000 0.00000 180.00000" {
 		t.Fatal("whoops we did a bummer")
 	}
-	// rect := geometry.Rect{
-	// 	Min: geometry.Point{X: minLon, Y: minLat},
-	// 	Max: geometry.Point{X: maxLon, Y: maxLat},
-	// }
-
-	// pt := geometry.Point{X: -179.995241, Y: -20.841812}
-
-	// fmt.Printf("[\n  [%f,%f]\n  [%f,%f]\n]\n[%f,%f]\n",
-	// 	rect.Min.X, rect.Min.Y, rect.Max.X, rect.Max.Y, pt.X, pt.Y)
-
-	// x, y := LatLonXY(pt.Y, pt.X, 3, 2, 2)
-
-	// fmt.Printf("[%f,%f]\n", x, y)
-
-	// // exceeds lat: -20.841812, lon: -179.995241, px: -767.986462, py: 60.635757 (tile: x: 3, y: 2, z: 2)
-
-	// exceeds lat: -4.405991, lon: -179.976782, px: -767.933959, py: 12.544966 (tile: x: 3, y: 2, z: 2)
-	// exceeds lat: -56.082370, lon: -179.911005, px: -767.746858, py: 193.552675 (tile: x: 3, y: 2, z: 2)
 }
 
 func TestParallelLayerPop(t *testing.T) {

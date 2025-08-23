@@ -21,6 +21,7 @@ type Layer struct {
 	features  []*Feature
 	extent    uint32
 	hasExtent bool
+	simplify  float64
 }
 
 // SetExtent sets the layers extent. Default is 4096.
@@ -33,6 +34,18 @@ func (l *Layer) SetExtent(extent uint32) {
 func (t *Tile) AddLayer(name string) *Layer {
 	t.layers = append(t.layers, &Layer{name: name})
 	return t.layers[len(t.layers)-1]
+}
+
+// SetSimplify will simplfy a geometry upon rendering. This performs a lossy
+// converversion of the geometry, which may drop points, making the layer look
+// different that the original, but causes Render() to return fewer bytes.
+// The value can be 0.0 - 1.0, where 0 is no simplication an 1.0 is the
+// maximum. Default is 0.0
+//
+// It's worth noting that Render(), on it's own, provides automatic lossless
+// simplification that is generally good enough at most zoom levels.
+func (l *Layer) SetSimplify(simplify float64) {
+	l.simplify = simplify
 }
 
 // GeometryType represents geometry type
@@ -179,7 +192,7 @@ func (l *Layer) append(vpb []byte) []byte {
 		extent = float64(l.extent)
 	}
 	for _, feature := range l.features {
-		pb, tagidxs = feature.append(pb, tagidxs, extent)
+		pb, tagidxs = feature.append(pb, tagidxs, extent, l.simplify)
 	}
 	for _, v := range keysa {
 		pb = append(pb, v...)
@@ -202,8 +215,29 @@ func (l *Layer) append(vpb []byte) []byte {
 	return vpb
 }
 
-func (f *Feature) append(
-	vpb []byte, tagidxs []int, extent float64,
+type rendpt struct{ x, y int64 }
+
+func mustRender(pts [3]rendpt, simplify float64) bool {
+	a, b, c := pts[0], pts[1], pts[2]
+	if (a.x == b.x && b.x == c.x) || (a.y == b.y && b.y == c.y) {
+		// No change in plane
+		return false
+	}
+	if simplify <= 0 {
+		// Do not simplify
+		return true
+	}
+	if simplify >= 1.0 {
+		simplify = 1.0
+	}
+	simp := (1-simplify)*9 + 1
+	d0 := int64(math.Atan2(float64(b.x-a.x), float64(b.y-a.y)) * simp)
+	d1 := int64(math.Atan2(float64(c.x-b.x), float64(c.y-b.y)) * simp)
+	return d0 != d1
+}
+
+func (f *Feature) append(vpb []byte, tagidxs []int, extent float64,
+	simplify float64,
 ) ([]byte, []int) {
 	var pb []byte
 	if f.hasID {
@@ -258,17 +292,32 @@ func (f *Feature) append(
 				}
 				var tbuf []byte
 				var count int
+				var pts [3]rendpt
+				var npts int
 				for ; i < len(f.geometry); i++ {
 					if f.geometry[i].which != lineTo {
 						break
 					}
 					x, y := commandXY(&f.geometry[i], extent)
-					relx, rely := x-lastx, y-lasty
-					if relx == 0 && rely == 0 {
-						continue
+					pts[npts] = rendpt{x, y}
+					npts++
+					if npts == 3 {
+						if mustRender(pts, simplify) {
+							// render point
+							relx, rely := pts[0].x-lastx, pts[0].y-lasty
+							lastx, lasty = pts[0].x, pts[0].y
+							tbuf = appendVarint(tbuf, relx)
+							tbuf = appendVarint(tbuf, rely)
+							count++
+							pts[0] = pts[1]
+						}
+						pts[1] = pts[2]
+						npts--
 					}
-					lastx, lasty = x, y
-
+				}
+				for i := 0; i < npts; i++ {
+					relx, rely := pts[i].x-lastx, pts[i].y-lasty
+					lastx, lasty = pts[i].x, pts[i].y
 					tbuf = appendVarint(tbuf, relx)
 					tbuf = appendVarint(tbuf, rely)
 					count++
